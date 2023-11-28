@@ -1,38 +1,47 @@
 package ui;
 
+import static java.lang.System.getProperty;
+
+import helpers.ConfigLoader;
+import helpers.UrlCheck;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.InteractsWithApps;
-import io.appium.java_client.android.AndroidDriver;
-import io.appium.java_client.android.options.UiAutomator2Options;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.text.MessageFormat;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
-import screens.HomeScreen;
-import screens.ListScreen;
+import org.openqa.selenium.Platform;
+import screens.BaseScreen;
+import screens.SecretScreen;
+import sessionmanager.SessionManager;
 
 public abstract class BaseTest {
 
+  private static final Platform PLATFORM;
+
   private AppiumDriver driver;
 
-  private AndroidDriver androidSetup() throws MalformedURLException {
-    final UiAutomator2Options options = new UiAutomator2Options()
-        .clearDeviceLogsOnStart()
-        .disableWindowAnimation()
-        .setApp("https://github.com/appium-pro/TheApp/releases/download/v1.12.0/TheApp.apk")
-        .setAppWaitPackage("com.appiumpro.the_app")
-        .setAutoGrantPermissions(true)
-        .setUdid("emulator-5554");
-    return new AndroidDriver(new URL("http://127.0.0.1:1234"), options);
+  static {
+    ConfigLoader.getProperties();
+    PLATFORM = Platform.valueOf(getProperty("PLATFORM").toUpperCase());
   }
 
   @BeforeEach
-  protected void setup() throws MalformedURLException {
-    driver = androidSetup();
+  protected void setUp() throws MalformedURLException {
+    Assumptions.assumeTrue(UrlCheck.isOnline(getProperty("APPIUM_URL") + "/status"));
+    if (PLATFORM.is(Platform.ANDROID)) {
+      driver = SessionManager.androidSetup();
+    } else if (PLATFORM.is(Platform.IOS)) {
+      driver = SessionManager.iosSetup();
+    } else {
+      throw new IllegalArgumentException("Platform not supported: " + PLATFORM);
+    }
   }
 
   @AfterEach
-  protected void teardown() {
+  protected void tearDown() {
     if (getDriver() != null) {
       ((InteractsWithApps) getDriver()).terminateApp("com.appiumpro.the_app");
       getDriver().quit();
@@ -43,11 +52,18 @@ public abstract class BaseTest {
     return driver;
   }
 
-  protected HomeScreen getHomeScreen() {
-    return new HomeScreen(getDriver());
+  protected <T extends BaseScreen> T getScreen(final Class<T> pageObjectClass) {
+    try {
+      return pageObjectClass.getDeclaredConstructor(AppiumDriver.class).newInstance(getDriver());
+    } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+             NoSuchMethodException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  protected ListScreen getListScreen() {
-    return new ListScreen(getDriver());
+  protected SecretScreen logInWithDeepLink(final String username, final String password) {
+    getDriver().get(MessageFormat.format("theapp://login/{0}/{1}", username, password));
+    return new SecretScreen(getDriver());
   }
+
 }

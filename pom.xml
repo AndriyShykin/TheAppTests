@@ -12,8 +12,8 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <appium.version>9.0.0</appium.version>
-    <junit.version>5.10.0</junit.version>
+    <appium.version>8.6.0</appium.version>
+    <junit.version>5.10.1</junit.version>
   </properties>
 
   <dependencies>
@@ -30,6 +30,15 @@
       <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-params -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
 </project>
